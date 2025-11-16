@@ -31,38 +31,39 @@ class OrderController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             // Validation logic for customer restrictions
-            $phone = $order->getPhone();
-            
+            $phone = $order->getCustomerPhoneNumber();
+
             if ($phone) {
                 // Check if customer already has a subscription agreement
                 $existingSubscription = $entityManager->getRepository(Order::class)
                     ->findOneBy([
-                        'phone' => $phone,
-                        'type' => 'subscription'
+                        'customerPhoneNumber' => $phone,
+                        'subscriptionPackage' => $order->getSubscriptionPackage() ? $order->getSubscriptionPackage()->getId() : null
                     ]);
-                
-                if ($existingSubscription) {
+
+                if ($existingSubscription && $order->getSubscriptionPackage()) {
                     $this->addFlash('error', 'Customer can have at most one subscription agreement.');
                     return $this->render('order/new.html.twig', [
                         'order' => $order,
                         'form' => $form,
                     ]);
                 }
-                
-                // Check if customer already purchased a unique item
-                $existingItemPurchase = $entityManager->getRepository(Order::class)
-                    ->findOneBy([
-                        'phone' => $phone,
-                        'type' => 'item',
-                        'productId' => $order->getProductId()
-                    ]);
-                
-                if ($existingItemPurchase) {
-                    $this->addFlash('error', 'Customer can purchase each unique item only once.');
-                    return $this->render('order/new.html.twig', [
-                        'order' => $order,
-                        'form' => $form,
-                    ]);
+
+                // Check if customer already purchased an article.
+                if ($order->getArticles()->count() > 0) {
+                    $existingArticlePurchase = $entityManager->getRepository(Order::class)
+                        ->findOneBy([
+                            'customerPhoneNumber' => $phone,
+                            'articles' => $order->getArticles()->first()
+                        ]);
+                    
+                    if ($existingArticlePurchase) {
+                        $this->addFlash('error', 'Customer can purchase each unique item only once.');
+                        return $this->render('order/new.html.twig', [
+                            'order' => $order,
+                            'form' => $form,
+                        ]);
+                    }
                 }
             }
 
