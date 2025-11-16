@@ -71,6 +71,16 @@ class ArticleController extends AbstractController
     #[Route('/{id}', name: 'app_article_delete', methods: ['POST'])]
     public function delete(Request $request, Article $article, EntityManagerInterface $entityManager): Response
     {
+        // Check if article is used in any orders
+        $ordersContainingArticle = $entityManager->getRepository(\App\Entity\Order::class)->findBy([
+            'articles' => $article->getId()
+        ]);
+        
+        if (!empty($ordersContainingArticle)) {
+            $this->addFlash('warning', 'Cannot delete this article as it is referenced in existing orders.');
+            return $this->redirectToRoute('app_article_index', [], Response::HTTP_SEE_OTHER);
+        }
+        
         if ($this->isCsrfTokenValid('delete'.$article->getId(), $request->request->get('_token'))) {
             $entityManager->remove($article);
             $entityManager->flush();

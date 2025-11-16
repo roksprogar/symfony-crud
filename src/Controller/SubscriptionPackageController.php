@@ -2,14 +2,15 @@
 
 namespace App\Controller;
 
+use App\Entity\Order;
 use App\Entity\SubscriptionPackage;
 use App\Form\SubscriptionPackageType;
-use App\Repository\SubscriptionPackageRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use App\Repository\SubscriptionPackageRepository;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
 #[Route('/subscription-package')]
 class SubscriptionPackageController extends AbstractController
@@ -71,6 +72,15 @@ class SubscriptionPackageController extends AbstractController
     #[Route('/{id}', name: 'app_subscription_package_delete', methods: ['POST'])]
     public function delete(Request $request, SubscriptionPackage $subscriptionPackage, EntityManagerInterface $entityManager): Response
     {
+        // Check if any orders exist for this subscription package
+        $ordersContainingSubscriptionPackage = $entityManager->getRepository(Order::class)->findBy([
+            'subscriptionPackage' => $subscriptionPackage
+        ]);
+
+        if (count($ordersContainingSubscriptionPackage) > 0) {
+            $this->addFlash('error', 'Cannot delete subscription package because it has existing orders.');
+            return $this->redirectToRoute('app_subscription_package_index', [], Response::HTTP_SEE_OTHER);
+        }
         if ($this->isCsrfTokenValid('delete'.$subscriptionPackage->getId(), $request->request->get('_token'))) {
             $entityManager->remove($subscriptionPackage);
             $entityManager->flush();
