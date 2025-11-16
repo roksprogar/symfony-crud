@@ -12,4 +12,15 @@
 
     <a href="{{ path('app_order_show', {'id': order.id}) }}">back to show</a>
     {{ include('order/_delete_form.html.twig') }}
+    
+    <h2>Manage Articles</h2>
+    <div id="article-list">
+        {% for article in order.articles %}
+            <p>{{ article.name }} - {{ article.price }}</p>
+        {% else %}
+            <p>No articles in this order</p>
+        {% endfor %}
+    </div>
+    
+    <a href="{{ path('app_article_new') }}" class="btn btn-success">Add New Article</a>
 {% endblock %}

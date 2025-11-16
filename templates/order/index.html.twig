@@ -13,6 +13,8 @@
                 <th>CustomerPhoneNumber</th>
                 <th>OrderStatus</th>
                 <th>Price</th>
+                <th>Subscription Package</th>
+                <th>Articles</th>
                 <th>DateCreated</th>
                 <th>Actions</th>
             </tr>
@@ -25,6 +27,20 @@
                 <td>{{ order.customerPhoneNumber }}</td>
                 <td>{{ order.orderStatus }}</td>
                 <td>{{ order.price }}</td>
+                <td>
+                    {% if order.subscriptionPackage %}
+                        {{ order.subscriptionPackage.name }}
+                    {% else %}
+                        None
+                    {% endif %}
+                </td>
+                <td>
+                    {% if order.articles|length > 0 %}
+                        {{ order.articles|map(item => item.name)|join(', ') }}
+                    {% else %}
+                        None
+                    {% endif %}
+                </td>
                 <td>{{ order.dateCreated ? order.dateCreated|date('Y-m-d H:i:s') : '' }}</td>
                 <td>
                     <a href="{{ path('app_order_show', {'id': order.id}) }}">show</a>
@@ -33,7 +49,7 @@
             </tr>
         {% else %}
             <tr>
-                <td colspan="7">no records found</td>
+                <td colspan="9">no records found</td>
             </tr>
         {% endfor %}
         </tbody>

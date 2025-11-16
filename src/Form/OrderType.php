@@ -1,15 +1,18 @@
 <?php
+// src/Form/OrderType.php
 
 namespace App\Form;
 
 use App\Entity\Order;
+use App\Entity\Article;
+use App\Entity\SubscriptionPackage;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\TextType;
-use Symfony\Component\Form\Extension\Core\Type\NumberType;
-use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
-use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\NumberType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 
 class OrderType extends AbstractType
 {
@@ -36,9 +39,19 @@ class OrderType extends AbstractType
                 'label' => 'Price',
                 'scale' => 2
             ])
-            ->add('dateCreated', DateTimeType::class, [
-                'label' => 'Date Created',
-                'widget' => 'single_text'
+            ->add('subscriptionPackage', EntityType::class, [
+                'class' => SubscriptionPackage::class,
+                'choice_label' => 'name',
+                'label' => 'Subscription Package',
+                'required' => false
+            ])
+            ->add('articles', EntityType::class, [
+                'class' => Article::class,
+                'choice_label' => 'name',
+                'label' => 'Articles',
+                'multiple' => true,
+                'expanded' => false,
+                'required' => false
             ])
         ;
     }

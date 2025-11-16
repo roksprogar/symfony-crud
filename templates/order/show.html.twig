@@ -28,6 +28,26 @@
                 <td>{{ order.price }}</td>
             </tr>
             <tr>
+                <th>Subscription Package</th>
+                <td>
+                    {% if order.subscriptionPackage %}
+                        {{ order.subscriptionPackage.name }}
+                    {% else %}
+                        None
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <th>Articles</th>
+                <td>
+                    {% if order.articles|length > 0 %}
+                        {{ order.articles|map(item => item.name)|join(', ') }}
+                    {% else %}
+                        None
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
                 <th>DateCreated</th>
                 <td>{{ order.dateCreated ? order.dateCreated|date('Y-m-d H:i:s') : '' }}</td>
             </tr>

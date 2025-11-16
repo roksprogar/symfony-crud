@@ -107,31 +107,47 @@ class OrderController extends AbstractController
 
                 if ($existingSubscription && $order->getSubscriptionPackage()) {
                     $this->addFlash('error', 'Customer can have at most one subscription agreement.');
-                    return $this->render('order/new.html.twig', [
+                    return $this->render('order/edit.html.twig', [
                         'order' => $order,
                         'form' => $form,
                     ]);
                 }
 
                 // Check if customer already purchased an article.
+                // Fix: properly handle article validation in edit mode
                 if ($order->getArticles()->count() > 0) {
-                    $existingArticlePurchase = $entityManager->getRepository(Order::class)
-                        ->findOneBy([
-                            'customerPhoneNumber' => $phone,
-                            'articles' => $order->getArticles()->first()
-                        ]);
+                    // For edit mode, we need to check against all orders for this customer
+                    $existingOrders = $entityManager->getRepository(Order::class)
+                        ->findBy(['customerPhoneNumber' => $phone]);
                     
-                    if ($existingArticlePurchase) {
-                        $this->addFlash('error', 'Customer can purchase each unique item only once.');
-                        return $this->render('order/new.html.twig', [
-                            'order' => $order,
-                            'form' => $form,
-                        ]);
+                    foreach ($existingOrders as $existingOrder) {
+                        // Skip the current order being edited
+                        if ($existingOrder->getId() === $order->getId()) {
+                            continue;
+                        }
+                        
+                        // Check if any of the articles in existing orders match those in current order
+                        foreach ($existingOrder->getArticles() as $existingArticle) {
+                            if ($order->getArticles()->contains($existingArticle)) {
+                                $this->addFlash('error', 'Customer can purchase each unique item only once.');
+                                return $this->render('order/edit.html.twig', [
+                                    'order' => $order,
+                                    'form' => $form,
+                                ]);
+                            }
+                        }
                     }
                 }
             }
 
-            $entityManager->flush();
+            // Ensure proper flushing of the entity
+            try {
+                $entityManager->flush();
+            } catch (\Exception $e) {
+                // Log the exception for debugging purposes
+                error_log('Flush error: ' . $e->getMessage());
+                throw $e;
+            }
 
             return $this->redirectToRoute('app_order_index', [], Response::HTTP_SEE_OTHER);
         }
