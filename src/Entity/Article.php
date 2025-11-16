@@ -5,6 +5,8 @@ namespace App\Entity;
 use App\Repository\ArticleRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 
 #[ORM\Entity(repositoryClass: ArticleRepository::class)]
 class Article
@@ -28,6 +30,9 @@ class Article
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $dateCreated = null;
+
+    #[ORM\ManyToMany(targetEntity: Order::class, mappedBy: 'articles')]
+    private Collection $orders;
 
     public function getId(): ?int
     {
@@ -86,6 +91,32 @@ class Article
     public function setDateCreated(\DateTimeInterface $dateCreated): static
     {
         $this->dateCreated = $dateCreated;
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Order>
+     */
+    public function getOrders(): Collection
+    {
+        return $this->orders;
+    }
+
+    public function addOrder(Order $order): static
+    {
+        if (!$this->orders->contains($order)) {
+            $this->orders->add($order);
+        }
+
+        return $this;
+    }
+
+    public function removeOrder(Order $order): static
+    {
+        if ($this->orders->removeElement($order)) {
+            // Order entity manages the relationship, so we don't call setArticle(null) here
+        }
+
         return $this;
     }
 }

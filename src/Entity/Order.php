@@ -30,7 +30,7 @@ class Order
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private ?string $price = null;
 
-    #[ORM\OneToMany(mappedBy: 'order', targetEntity: Article::class, cascade: ['persist', 'remove'])]
+    #[ORM\ManyToMany(targetEntity: Article::class, inversedBy: 'orders')]
     private Collection $articles;
 
     #[ORM\ManyToOne(targetEntity: SubscriptionPackage::class, inversedBy: 'orders')]
