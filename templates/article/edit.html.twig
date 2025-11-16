@@ -1,0 +1,15 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit Article{% endblock %}
+
+{% block body %}
+    <h1>Edit Article</h1>
+
+    {{ form_start(form) }}
+        {{ form_widget(form) }}
+        <input type="submit" value="Save" class="btn btn-primary">
+    {{ form_end(form) }}
+
+    <a href="{{ path('app_article_show', {'id': article.id}) }}">back to show</a>
+    {{ include('article/_delete_form.html.twig') }}
+{% endblock %}

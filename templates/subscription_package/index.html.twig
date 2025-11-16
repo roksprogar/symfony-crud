@@ -1,0 +1,43 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Subscription Packages{% endblock %}
+
+{% block body %}
+    <h1>Subscription Packages</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Price</th>
+                <th>IncludesMonthlyMagazine</th>
+                <th>DateCreated</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for subscription_package in subscription_packages %}
+            <tr>
+                <td>{{ subscription_package.id }}</td>
+                <td>{{ subscription_package.name }}</td>
+                <td>{{ subscription_package.description }}</td>
+                <td>{{ subscription_package.price }}</td>
+                <td>{{ subscription_package.includesMonthlyMagazine ? 'Yes' : 'No' }}</td>
+                <td>{{ subscription_package.dateCreated ? subscription_package.dateCreated|date('Y-m-d H:i:s') : '' }}</td>
+                <td>
+                    <a href="{{ path('app_subscription_package_show', {'id': subscription_package.id}) }}">show</a>
+                    <a href="{{ path('app_subscription_package_edit', {'id': subscription_package.id}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="7">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_subscription_package_new') }}">Create new</a>
+{% endblock %}
