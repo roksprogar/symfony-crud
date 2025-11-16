@@ -25,7 +25,8 @@ class AppFixtures extends Fixture
             ['Starter Package', 'Entry-level subscription for beginners.', '9.99', false, '2023-03-10 09:15:00'],
         ];
 
-        foreach ($packagesData as $data) {
+        $packages = [];
+        foreach ($packagesData as $index => $data) {
             $package = new SubscriptionPackage();
             $package->setName($data[0]);
             $package->setDescription($data[1]);
@@ -34,6 +35,7 @@ class AppFixtures extends Fixture
             $package->setDateCreated(new DateTime($data[4]));
 
             $manager->persist($package);
+            $packages[] = $package;
         }
 
         // Load Article entities
@@ -50,7 +52,8 @@ class AppFixtures extends Fixture
             ['Beauty Products', 'Premium beauty products for daily use.', '67.50', 'supplier10@example.com', '2023-10-25 17:10:00'],
         ];
 
-        foreach ($articlesData as $data) {
+        $articles = [];
+        foreach ($articlesData as $index => $data) {
             $article = new Article();
             $article->setName($data[0]);
             $article->setDescription($data[1]);
@@ -59,6 +62,7 @@ class AppFixtures extends Fixture
             $article->setDateCreated(new DateTime($data[4]));
 
             $manager->persist($article);
+            $articles[] = $article;
         }
 
         // Load Order entities
@@ -82,6 +86,21 @@ class AppFixtures extends Fixture
             $order->setOrderStatus($data[2]);
             $order->setPrice($data[3]);
             $order->setDateCreated(new DateTime('2023-01-01 00:00:00'));
+
+            // Add articles to order
+            foreach ($data[4] as $articleIndex) {
+                if (isset($articles[$articleIndex])) {
+                    $order->addArticle($articles[$articleIndex]);
+                }
+            }
+
+            // Set subscription package
+            if (isset($data[5]) && count($data[5]) > 0) {
+                $packageIndex = $data[5][0];
+                if (isset($packages[$packageIndex])) {
+                    $order->setSubscriptionPackage($packages[$packageIndex]);
+                }
+            }
 
             $manager->persist($order);
         }
