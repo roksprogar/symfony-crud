@@ -10,10 +10,22 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Psr\Log\LoggerInterface;
+use App\Service\Sms\SmsGateway;
+use App\Exception\SmsRateLimitsExceededException;
 
 #[Route('/order')]
 class OrderController extends AbstractController
 {
+    private SmsGateway $smsGateway;
+    private LoggerInterface $logger;
+
+    public function __construct(SmsGateway $smsGateway, LoggerInterface $logger)
+    {
+        $this->smsGateway = $smsGateway;
+        $this->logger = $logger;
+    }
+
     #[Route('/', name: 'app_order_index', methods: ['GET'])]
     public function index(OrderRepository $orderRepository): Response
     {
@@ -95,6 +107,23 @@ class OrderController extends AbstractController
     #[Route('/{id}', name: 'app_order_show', methods: ['GET'])]
     public function show(Order $order): Response
     {
+        // This does not belong here, belongs to the new action (should be dispatched as an async message).
+        $recipient = $order->getCustomerPhoneNumber();
+        $content = sprintf('Your order #%s has been successfully placed.', $order->getId());
+
+        try {
+            $this->smsGateway->sendSms($recipient, $content);
+            $this->logger->info('SMS sent successfully for order {id}.', ['id' => $order->getId()]);
+        
+        } catch (SmsRateLimitsExceededException $e) {
+            // Log a critical error and re-queue the message for later processing
+            $this->logger->error('SMS sending failed: All services rate-limited.', [
+                'order_id' => $order->getId(),
+                'error' => $e->getMessage(),
+            ]);
+            throw $e; 
+        }
+
         return $this->render('order/show.html.twig', [
             'order' => $order,
         ]);

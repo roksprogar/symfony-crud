@@ -16,5 +16,23 @@ services:
     App\:
         resource: '../src/'
 
-    # add more service definitions when explicit configuration is needed
-    # please note that last definitions always *replace* previous ones
+    # Use the default cache pool for rate limiting
+    cache.rate_limiter:
+        class: Symfony\Component\Cache\Adapter\FilesystemAdapter
+        arguments:
+            $directory: '%kernel.cache_dir%/rate_limiter'
+            $defaultLifetime: 0
+
+    App\Service\Sms\ServiceASender:
+        arguments:
+            $rateLimitCache: '@cache.rate_limiter'
+        tags: ['app.sms_sender']
+
+    App\Service\Sms\ServiceBSender:
+        arguments:
+            $rateLimitCache: '@cache.rate_limiter'
+        tags: ['app.sms_sender']
+
+    App\Service\Sms\SmsGateway:
+        arguments:
+            $senders: !tagged_iterator app.sms_sender
