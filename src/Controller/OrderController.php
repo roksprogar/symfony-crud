@@ -51,20 +51,33 @@ class OrderController extends AbstractController
 
                 // Check if customer already purchased an article.
                 if ($order->getArticles()->count() > 0) {
-                    $existingArticlePurchase = $entityManager->getRepository(Order::class)
-                        ->findOneBy([
-                            'customerPhoneNumber' => $phone,
-                            'articles' => $order->getArticles()->first()
-                        ]);
-                    
-                    if ($existingArticlePurchase) {
-                        $this->addFlash('error', 'Customer can purchase each unique item only once.');
-                        return $this->render('order/new.html.twig', [
-                            'order' => $order,
-                            'form' => $form,
-                        ]);
+                    // Check each article to see if it was already purchased by the same customer
+                    foreach ($order->getArticles() as $article) {
+                        $existingArticlePurchase = $entityManager->createQueryBuilder()
+                            ->select('o')
+                            ->from(Order::class, 'o')
+                            ->join('o.articles', 'a')
+                            ->where('o.customerPhoneNumber = :phone')
+                            ->andWhere('a.id = :articleId')
+                            ->setParameter('phone', $phone)
+                            ->setParameter('articleId', $article->getId())
+                            ->getQuery()
+                            ->getOneOrNullResult();
+                        
+                        if ($existingArticlePurchase) {
+                            $this->addFlash('error', 'Customer can purchase each unique item only once.');
+                            return $this->render('order/new.html.twig', [
+                                'order' => $order,
+                                'form' => $form,
+                            ]);
+                        }
                     }
                 }
+            }
+
+            // Ensure dateCreated is set before persisting
+            if (!$order->getDateCreated()) {
+                $order->setDateCreated(new \DateTime());
             }
 
             $entityManager->persist($order);
@@ -94,7 +107,7 @@ class OrderController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // Validation logic for customer restrictions
+            // Validation logic for customer restrictions - SAME AS NEW ACTION
             $phone = $order->getCustomerPhoneNumber();
 
             if ($phone) {
@@ -116,25 +129,25 @@ class OrderController extends AbstractController
                 // Check if customer already purchased an article.
                 // Fix: properly handle article validation in edit mode
                 if ($order->getArticles()->count() > 0) {
-                    // For edit mode, we need to check against all orders for this customer
-                    $existingOrders = $entityManager->getRepository(Order::class)
-                        ->findBy(['customerPhoneNumber' => $phone]);
-                    
-                    foreach ($existingOrders as $existingOrder) {
-                        // Skip the current order being edited
-                        if ($existingOrder->getId() === $order->getId()) {
-                            continue;
-                        }
+                    // Check each article to see if it was already purchased by the same customer
+                    foreach ($order->getArticles() as $article) {
+                        $existingArticlePurchase = $entityManager->createQueryBuilder()
+                            ->select('o')
+                            ->from(Order::class, 'o')
+                            ->join('o.articles', 'a')
+                            ->where('o.customerPhoneNumber = :phone')
+                            ->andWhere('a.id = :articleId')
+                            ->setParameter('phone', $phone)
+                            ->setParameter('articleId', $article->getId())
+                            ->getQuery()
+                            ->getOneOrNullResult();
                         
-                        // Check if any of the articles in existing orders match those in current order
-                        foreach ($existingOrder->getArticles() as $existingArticle) {
-                            if ($order->getArticles()->contains($existingArticle)) {
-                                $this->addFlash('error', 'Customer can purchase each unique item only once.');
-                                return $this->render('order/edit.html.twig', [
-                                    'order' => $order,
-                                    'form' => $form,
-                                ]);
-                            }
+                        if ($existingArticlePurchase) {
+                            $this->addFlash('error', 'Customer can purchase each unique item only once.');
+                            return $this->render('order/edit.html.twig', [
+                                'order' => $order,
+                                'form' => $form,
+                            ]);
                         }
                     }
                 }
